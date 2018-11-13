@@ -4,8 +4,13 @@
 # imports
 # =============================================================================
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 from qiskit import (register, QuantumRegister, ClassicalRegister,
                     QuantumCircuit, execute, IBMQ)
+from scipy.optimize import minimize
+
 
 # =============================================================================
 # constants
@@ -19,7 +24,7 @@ URL = ""
 nqubits = 1
 
 # number of times to run hadamard test to estimate observable
-num_shots = 10000
+NUM_SHOTS = 1000
 
 # flags
 VERBOSE = True
@@ -29,7 +34,7 @@ VERBOSE = True
 # =============================================================================
 
 def run_hadamard_test(operators:list, angles=[0, 0, 0],
-                      num_shots:int=10000, mode:str="real",
+                      num_shots:int=NUM_SHOTS, mode:str="real",
                       verbose=False):
     """Runs Hadamard test to estimate the observable <0|Q_i|0>
     where each Q_i is an operator in 'operators'.
@@ -85,7 +90,7 @@ def run_hadamard_test(operators:list, angles=[0, 0, 0],
     return (counts["0"] - counts["1"]) / num_shots
 
 def compute_expectation(operators:list, angles=[0, 0, 0],
-                        num_shots:int=10000, verbose=False):
+                        num_shots:int=NUM_SHOTS, verbose=False):
     """Computes the expectation of an observable <0|Q|0>.
     
     Here, Q corresponds to an operator list in VLS.
@@ -99,74 +104,44 @@ def compute_expectation(operators:list, angles=[0, 0, 0],
     imag = run_hadamard_test(operators, angles, num_shots, "imag", verbose)
     return real + imag * 1j
 
+def cost(angles):
+    """Computes the global cost function for the simple 2x2 example with
+    A = Hadmard and b = X|0>.
+    """
+    ops = ["X", "H", "V"]
+    expectation = compute_expectation(ops, angles)
+    overlap = abs(expectation)**2
+    return 1 - overlap
+
+def grid_search(step):
+    """Runs a grid search to compute cost over all angles."""
+    xs = ys = zs = np.arange(0, 2 * np.pi, step)
+    
+    costs = np.zeros([len(xs), len(ys), len(zs)])
+    
+    for (i, x) in enumerate(xs):
+        for (j, y) in enumerate(ys):
+            for (k, z) in enumerate(zs):
+                costs[i, j, k] = cost([x, y, z])
+    return costs
+
 # =============================================================================
 # main
 # =============================================================================
 
 def main():
     """Runs main function for the file."""
-    ops1 = ["X", "H", "V"]
-    ops2 = ["V", "H", "X"]
-    
-    test_angles = [1, 2, 3]
-    
-    expec1 = compute_expectation(ops1, test_angles)
-    
-    overlap = abs(expec1)**2
-    cost = 1 - overlap
+    init_angles = [0, 0, 0]
 
-    print("the cost is", cost)
+    # =========================================================================
+    # do the optimization
+    # =========================================================================
+
+    print("the cost is", cost(init_angles))
 
 # =============================================================================
 # main script
 # =============================================================================
 
-# register to use ibmq
-#register(API, URL)
-
-# make classical and quantum registers
-qreg = QuantumRegister(nqubits + 1)
-creg = ClassicalRegister(1)
-
-# make a quantum circuit
-circ = QuantumCircuit(qreg, creg)
-
-# =============================================================================
-# psi state preparation for hadamard test
-# =============================================================================
-
-# add the unitary ansatz
-circ.u2(0.132, 0.132, qreg[1])
-
-# add the A matrix
-circ.h(qreg[1])
-
-# add the b vector preparation (dagger)
-circ.x(qreg[1])
-
-# =============================================================================
-# hadamard test
-# =============================================================================
-
-# first hadamard on top register
-circ.h(qreg[0])
-
-# controlled observable
-circ.cx(qreg[0], qreg[1])
-
-# second hadamard on top register
-circ.h(qreg[0])
-
-# measure the first register
-circ.measure(qreg[0], creg[0])
-
-out = execute(circ, "qasm_simulator", shots=num_shots)
-res = out.result()
-counts = res.get_counts()
-
-if VERBOSE:
-    print(circ.qasm())
-
-observable = (counts["0"] - counts["1"]) / num_shots
-
-print(observable)
+if __name__ == "__main__":
+    main()
