@@ -27,10 +27,13 @@ BACKEND = "qasm_simulator"
 nqubits = 1
 
 # number of times to run hadamard test to estimate observable
-NUM_SHOTS = 1000
+NUM_SHOTS = 10000
 
 # flags
 VERBOSE = True
+
+# mode of script (optimize or grid search)
+MODE = "opt"
 
 # optimization methods
 METHODS = ['Nelder-Mead', 'Powell',
@@ -134,7 +137,7 @@ def cost(angles):
     A = Hadmard and b = X|0>.
     """
     ops = ["X", "H", "V"]
-    expectation = compute_expectation(ops, angles)
+    expectation = compute_expectation(ops, angles + [0, 0])
     overlap = abs(expectation)**2
     cost = 1 - overlap
     print(cost)
@@ -142,15 +145,13 @@ def cost(angles):
 
 def grid_search(step):
     """Runs a grid search to compute cost over all angles."""
-    xs = ys = zs = np.arange(0, 2 * np.pi, step)
-    
-    costs = np.zeros([len(xs), len(ys), len(zs)])
-    
+    xs = np.arange(0, 2 * np.pi, step)
+
+    costs = np.zeros_like(xs)
+
     for (i, x) in enumerate(xs):
-        for (j, y) in enumerate(ys):
-            for (k, z) in enumerate(zs):
-                costs[i, j, k] = cost([x, y, z])
-    return costs
+        costs[i] = cost([x])
+    return (xs, costs)
 
 # =============================================================================
 # main
@@ -162,13 +163,32 @@ def main():
     IBMQ.enable_account(API, URL)
 
     # =========================================================================
-    # do the optimization
+    # grid search mode
     # =========================================================================
-    init_angles = [0, 0, 0]
-    out = minimize(fun=cost, x0=init_angles,
-                   bounds=[(0, 2 * np.pi)] * 3, method=METHODS[m])
 
-    print(out)
+    if MODE == "grid_search":
+        xs, costs = grid_search(step=0.1)
+        plt.plot(xs, costs, "-o", linewidth=2)
+        plt.xticks([0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi],
+                   ["0", "pi / 2", "pi", "3 pi / 2", "2 pi"])
+        plt.grid()
+        plt.show()
+
+    # =========================================================================
+    # optimization mode
+    # =========================================================================
+    
+    else:
+        init_angles = [np.pi / 2]
+        """
+        out = minimize(fun=cost,
+                       x0=init_angles,
+                       bounds=[(0, 2 * np.pi)] * len(init_angles),
+                       method=METHODS[m])
+        """
+        out = cost(init_angles)
+
+        print(out)
 
 # =============================================================================
 # main script
