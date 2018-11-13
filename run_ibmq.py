@@ -29,6 +29,16 @@ NUM_SHOTS = 1000
 # flags
 VERBOSE = True
 
+# optimization methods
+METHODS = ['Nelder-Mead', 'Powell',
+           'CG', 'BFGS', 'COBYLA',
+           'TNC', 'trust-constr',
+           'trust-ncg', 'trust-krylov',
+           'trust-exact']
+
+# index for optimization method to use
+m = 1
+
 # =============================================================================
 # functions
 # =============================================================================
@@ -86,8 +96,18 @@ def run_hadamard_test(operators:list, angles=[0, 0, 0],
     res = out.result()
     counts = res.get_counts()
     
-    # return estimate of expectation
-    return (counts["0"] - counts["1"]) / num_shots
+    # get the counts of 0 and 1
+    if "0" in counts.keys():
+        zero_count = counts["0"]
+    else:
+        zero_count = 0
+
+    if "1" in counts.keys():
+        one_count = counts["1"]
+    else:
+        one_count = 0
+
+    return (zero_count - one_count) / num_shots
 
 def compute_expectation(operators:list, angles=[0, 0, 0],
                         num_shots:int=NUM_SHOTS, verbose=False):
@@ -111,7 +131,9 @@ def cost(angles):
     ops = ["X", "H", "V"]
     expectation = compute_expectation(ops, angles)
     overlap = abs(expectation)**2
-    return 1 - overlap
+    cost = 1 - overlap
+    print(cost)
+    return cost
 
 def grid_search(step):
     """Runs a grid search to compute cost over all angles."""
@@ -136,8 +158,11 @@ def main():
     # =========================================================================
     # do the optimization
     # =========================================================================
+    
+    out = minimize(fun=cost, x0=init_angles,
+                   bounds=[(0, 2 * np.pi)] * 3, method=METHODS[m])
 
-    print("the cost is", cost(init_angles))
+    print(out)
 
 # =============================================================================
 # main script
