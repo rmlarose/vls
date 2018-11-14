@@ -4,6 +4,8 @@
 # imports
 # =============================================================================
 
+import time
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -28,7 +30,7 @@ BACKEND = "qasm_simulator"
 nqubits = 1
 
 # number of times to run hadamard test to estimate observable
-NUM_SHOTS = 1000
+NUM_SHOTS = 10000
 
 # flags
 VERBOSE = True
@@ -79,13 +81,13 @@ def run_hadamard_test(operators:list, angles=[0, 0, 0],
     # all controlled operations
     for op in operators:
         exec(op_dict[op])
-    
-    # second hadamard on top register
-    circ.h(qreg[0])
-    
+
     # measurement basis for real or imag part
     if mode == "im" or mode == "imag" or mode != "real":
         circ.s(qreg[0])
+    
+    # second hadamard on top register
+    circ.h(qreg[0])
         
     # measure top register
     circ.measure(qreg[0], creg[0])
@@ -124,13 +126,19 @@ def compute_expectation(operators:list, angles=[0, 0, 0],
     
     Here, Q corresponds to an operator list in VLS.
     """
+    # hadamard test to compute real part
     if verbose:
         print("Now computing real part of expectation value..")
     real = run_hadamard_test(operators, angles, num_shots, "real", verbose)
+    if verbose:
+        print("real part is", real)
 
+    # hadamard test to compute imag part
     if verbose:
         print("Now computing imag part of expectation value...")
     imag = run_hadamard_test(operators, angles, num_shots, "imag", verbose)
+    if verbose:
+        print("imag part is", imag)
     return real + imag * 1j
 
 def cost(angles):
@@ -152,6 +160,7 @@ def grid_search(step):
 
     for (i, x) in enumerate(xs):
         costs[i] = cost([x])
+        print("\n\n", costs[i], "\n\n")
     return (xs, costs)
 
 # =============================================================================
@@ -168,10 +177,22 @@ def main():
     # =========================================================================
 
     if MODE == "grid_search":
+        # do the grid search
         xs, costs = grid_search(step=0.1)
+        
+        # if we use a qcomputer, save the results
+        if BACKEND != "qasm_simulator":
+            save = np.array([xs, costs])
+            np.savetxt(str(BACKEND) + "_" + 
+                       "_".join(time.asctime().split()) + ".txt",
+                       save.T)
+        # plotting
         plt.plot(xs, costs, "-o", linewidth=2)
         plt.xticks([0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi],
                    ["0", "pi / 2", "pi", "3 pi / 2", "2 pi"])
+        plt.title("2x2 Linear System")
+        plt.ylabel("Cost (Global)")
+        plt.xlabel("Ansatz Angle")
         plt.grid()
         plt.show()
 
