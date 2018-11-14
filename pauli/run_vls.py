@@ -25,7 +25,7 @@ Amat_ops = np.array([["X", "Z", "Z", "Y"],
 # coefficients multiplying the terms of the pauli operators in A
 Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
 
-bvec_ops = np.array(["X", "X", "Z", "X"])
+bvec_ops = np.array(["X", "Y", "Z", "X"])
 
 # =============================================================================
 # main script

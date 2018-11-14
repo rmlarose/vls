@@ -245,9 +245,12 @@ class PauliSystem():
     # =========================================================================
 
     def make_ansatz_circuit(self):
-        pass
+        self.get_symbol_list_for_layer()
+        params = self._reshape_list_to_layer_format(self.symbol_list)
+        sparams = self._reshape_list_to_layer_format(self.symbol_list_shifted)
+        self.layer(params, sparams)
 
-    def layer(self, params, shifted_params, copy):
+    def layer(self, params, shifted_params):
         """Implements a single layer of the diagonalizing unitary.
 
         input:
@@ -296,9 +299,6 @@ class PauliSystem():
 
         # get some qubits
         qbits = [LineQubit(x) for x in range(n + 1)]
-
-        if params.size != self.num_angles_required_for_layer():
-            raise ValueError("incorrect number of parameters for layer")
 
         # =====================================================================
         # helper functions for layer
@@ -376,9 +376,6 @@ class PauliSystem():
         # helper function for indexing loops
         stop = lambda n: n - 1 if n % 2 == 1 else n
 
-        # shift in qubit indexing for different copies
-        shift = 2 * n * copy
-
         # =====================================================================
         # implement the layer
         # =====================================================================
@@ -387,15 +384,13 @@ class PauliSystem():
 
         # unshifted gates on adjacent qubit pairs
         for ii in range(0, stop(n), 2):
-            iiq = ii + shift
-            gate(qbits[iiq : iiq + 2], params[ii // 2])
+            gate(qbits[ii : ii + 2], params[ii // 2])
 
         # shifted gates on adjacent qubits
         if n > 2:
             for ii in range(1, n, 2):
-                iiq = ii + shift
-                gate([qbits[iiq],
-                      qbits[(iiq + 1) % n + shift]],
+                gate([qbits[ii],
+                      qbits[(ii + 1) % n]],
                      shifted_params[ii // 2])
 
     def _rot(self, qubit, params):
@@ -445,7 +440,8 @@ class PauliSystem():
             )
         
         # add ansatz on bottom register
-        # something like circ += self.make_ansatz()
+        self.make_ansatz_circuit()
+        circ += self.ansatz
         
         # add controlled sigma_k term (corresponding to ops1)
         circ += self.make_controlled_op_list_circuit(ops1)
