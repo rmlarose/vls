@@ -1,4 +1,16 @@
-"""Code for running a small instance of VLS on IBMQ."""
+"""Code for running a small instance of VLS on IBMQ and simulator.
+
+Script is currently set to run in two modes:
+    
+MODE == "grid_search"
+    perform a grid search of the cost function over all angles.
+
+MODE == "optimize"
+    Use an optimization algorithm to find the minimum of the cost.
+    
+written by Ryan LaRose <rlarose@umich.edu>
+at LANL 11-13-2018
+"""
 
 # =============================================================================
 # imports
@@ -160,7 +172,6 @@ def grid_search(step):
 
     for (i, x) in enumerate(xs):
         costs[i] = cost([x])
-        print("\n\n", costs[i], "\n\n")
     return (xs, costs)
 
 # =============================================================================
