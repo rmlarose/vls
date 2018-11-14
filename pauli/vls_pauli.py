@@ -12,7 +12,7 @@ at LANL 11-14-2018
 
 import numpy as np
 
-import cirq
+from cirq import (Circuit, InsertStrategy, LineQubit, ops)
 from cirq.ops.controlled_gate import ControlledGate
 
 # =============================================================================
@@ -20,7 +20,7 @@ from cirq.ops.controlled_gate import ControlledGate
 # =============================================================================
 
 class PauliSystem():
-    """PauliMatrix class.
+    """PauliSystem class.
     
     """
     # =========================================================================
@@ -73,7 +73,7 @@ class PauliSystem():
     # =========================================================================
     
     def matrix(self):
-        """Returns a matrix representation of the PauliMatrix."""
+        """Returns a matrix representation of the matrix of the PauliSystem."""
         # allocate space
         mat = np.zeros(self.size(), dtype=np.complex64)
         
@@ -111,11 +111,68 @@ class PauliSystem():
     # methods for creating circuits
     # =========================================================================
     
+    def _key_to_gate(self, key:str):
+        """Returns a gate corresponding to a string key."""
+        key_mat = {"X": ops.X,
+                   "Y": ops.Y,
+                   "Z": ops.Z}
+        
+        return key_mat[key]
+    
+    def _key_to_cgate(self, key:str):
+        """Returns a controlled-gate corresponding to a string key."""
+        key_mat = {"X": ControlledGate(ops.X),
+                   "Y": ControlledGate(ops.Y),
+                   "Z": ControlledGate(ops.Z)}
+        
+        return key_mat[key]
+    
+    
     def make_matrix_circuit(self):
-        pass
+        """Returns a quantum circuit implementing the matrix of the
+        PauliSystem.
+        """
+        # get a circuit
+        circ = Circuit()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits())]
+        
+        # loop over each term in the matrix expansion
+        for op_list in self.ops:
+            # loop over each pauli operator
+            for (q, key) in enumerate(op_list):
+                if key == "I": continue
+                circ.append(
+                    self._key_to_gate(key)(qbits[q]),
+                    strategy=InsertStrategy.EARLIEST
+                    )
+        
+        return circ
+                
     
     def make_controlled_matrix_circuit(self):
-        pass
+        """Returns a quantum circuit implementing the matrix of the
+        PauliSystem.
+        """
+        # get a circuit
+        circ = Circuit()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
+        # loop over each term in the matrix expansion
+        for op_list in self.ops:
+            # loop over each pauli operator
+            for (q, key) in enumerate(op_list):
+                q += 1
+                if key == "I": continue
+                circ.append(
+                    self._key_to_cgate(key)(qbits[0], qbits[q]),
+                    strategy=InsertStrategy.EARLIEST
+                    )
+        
+        return circ
     
     def make_vector_circuit(self):
         pass
@@ -125,10 +182,34 @@ class PauliSystem():
     
     def make_ansatz_circuit(self):
         pass
+    
+    def _make_hadamard_test_circuit(self, ops1, ops2, j, mode):
+        # add hadamard gate on top register
+        
+        # add ansatz on bottom register
+        
+        # add controlled sigma_k term (corresponding to ops1)
+        
+        # add u dagger term
+        
+        # add controlled sigma_z on the jth qubit
+        
+        # add u term
+        
+        # add controlled sigma_kprim term (corresponding to ops2)
+        
+        # optional s gate for imag part
+        
+        # add hadamard gate on top register
+        
+        # add measurement to top qubit
+        pass
 
     # =========================================================================
     # methods for computing the cost
     # =========================================================================
+    
+    
     
 
     def run_hadamard_test(self, ops1, ops2, j, mode):
@@ -158,7 +239,9 @@ class PauliSystem():
             rtype: complex
             real/imag part of expectation value <Q_{k, kprime}^{j}>
         """
-        pass
+        # get a hadmard test circuit
+        
+        # run it
         
         
         
