@@ -35,11 +35,5 @@ A = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
 
 print("Matrix of system:\n", A.matrix())
 
-print("Circuit for first term:\n", A.make_controlled_op_list_circuit(A.ops[1]))
-
-print("Circuit for matrix:\n", A.make_controlled_matrix_circuit())
-
-print("Circuit for vector:\n", A.make_vector_circuit())
-
 print("Hadamard test for local cost function circuit:")
-print(A.make_hadamard_test_circuit(A.ops[0], A.ops[1], 3, "imag"))
+print(A.make_hadamard_test_circuit(A.ops[2], A.ops[1], 3, "real"))

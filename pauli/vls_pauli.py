@@ -12,8 +12,10 @@ at LANL 11-14-2018
 
 import numpy as np
 
-from cirq import (Circuit, InsertStrategy, LineQubit, ops, Symbol)
+from cirq import (Circuit, InsertStrategy, LineQubit, ops,
+                  ParamResolver,Symbol)
 from cirq.ops.controlled_gate import ControlledGate
+from cirq.google import XmonSimulator
 
 # =============================================================================
 # classes
@@ -298,7 +300,7 @@ class PauliSystem():
         n = self.num_qubits()
 
         # get some qubits
-        qbits = [LineQubit(x) for x in range(n + 1)]
+        qbits = [LineQubit(x) for x in range(1, n + 1)]
 
         # =====================================================================
         # helper functions for layer
@@ -483,7 +485,7 @@ class PauliSystem():
             )
         return circ
     
-    def run_hadamard_test(self, ops1, ops2, j, mode):
+    def run_hadamard_test(self, angles, ops1, ops2, j, mode, reps):
         """Returns the real or imaginary part of the term
         
         <Q_{k, kprime}^{j}> := <0|V\dag A_k\dag U P_j U\dag A_kprime V|0\>
@@ -491,6 +493,9 @@ class PauliSystem():
         using the Hadmard test.
         
         Args:
+            angles [type: list<float>]
+                angles in circuit ansatz
+
             ops1 [type: list<str>]
                 first list of pauli operators (\sigma_k term in notes)
             
@@ -510,7 +515,21 @@ class PauliSystem():
             rtype: complex
             real/imag part of expectation value <Q_{k, kprime}^{j}>
         """
-        # get a hadmard test circuit
+        # get a hadmard test circuit with symbols (parameters)
+        circuit = self.make_hadamard_test_circuit(ops1, ops2, j, mode)
         
-        # run it
+        # get a parameter resolver for the input angles
+        param_resolver = ParamResolver(
+            {str(ii) : angles[ii] for ii in range(len(angles))}
+        )
         
+        # get a circuit simulator
+        simulator = XmonSimulator()
+        
+        # run the circuit with resolved parameters
+        out = simulator.run(
+            circuit.with_parameters_resolved_by(param_resolver),
+            repetitions=reps
+            )
+        
+        return out
