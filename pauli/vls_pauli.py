@@ -12,7 +12,7 @@ at LANL 11-14-2018
 
 import numpy as np
 
-from cirq import (Circuit, InsertStrategy, LineQubit, ops)
+from cirq import (Circuit, InsertStrategy, LineQubit, ops, Symbol)
 from cirq.ops.controlled_gate import ControlledGate
 
 # =============================================================================
@@ -56,6 +56,7 @@ class PauliSystem():
         self.coeffs = coeffs
         self.ops = ops
         self.vec_ops = vec_ops
+        
         self.ansatz = Circuit()
 
     def num_qubits(self):
@@ -99,45 +100,44 @@ class PauliSystem():
             mat += self.coeffs[ind] * term
             
         return mat
-            
-            
+
     def _key_to_mat(self, key:str):
         """Returns a pauli matrix corresponding to a string key."""
         key_mat = {"I": self.imat,
                    "X": self.xmat,
                    "Y": self.ymat,
                    "Z": self.zmat}
-        
+
         return key_mat[key]
 
     # =========================================================================
     # methods for creating circuits
     # =========================================================================
-    
+
     def _key_to_gate(self, key:str):
         """Returns a gate corresponding to a string key."""
         key_mat = {"X": ops.X,
                    "Y": ops.Y,
                    "Z": ops.Z}
-        
-        return key_mat[key]
     
+        return key_mat[key]
+
     def _key_to_cgate(self, key:str):
         """Returns a controlled-gate corresponding to a string key."""
         key_mat = {"X": ControlledGate(ops.X),
                    "Y": ControlledGate(ops.Y),
                    "Z": ControlledGate(ops.Z)}
-        
+
         return key_mat[key]
-    
+
     def make_op_list_circuit(self, op_list):
         """Returns a quantum circuit implementing a list of Pauli ops."""
         # get a circuit
         circ = Circuit()
-        
+
         # get some qubits
         qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
-        
+
         for (q, key) in enumerate(op_list):
             if key == "I": continue
             q += 1
@@ -145,9 +145,9 @@ class PauliSystem():
                 self._key_to_gate(key)(qbits[q]),
                 strategy=InsertStrategy.EARLIEST
                 )
-        
+
         return circ
-    
+
     def make_controlled_op_list_circuit(self, op_list):
         """Returns a quantum circuit implementing a list of controlled Pauli
         operations.
@@ -167,34 +167,33 @@ class PauliSystem():
                 )
 
         return circ
-    
+
     def make_matrix_circuit(self):
         """Returns a quantum circuit implementing the matrix of the
         PauliSystem.
         """
         # get a circuit
         circ = Circuit()
-        
+
         # loop over each term in the matrix expansion
         for op_list in self.ops:
             circ += self.make_op_list_circuit(op_list)
-        
+
         return circ
-                
-    
+
     def make_controlled_matrix_circuit(self):
         """Returns a quantum circuit implementing the matrix of the
         PauliSystem.
         """
         # get a circuit
         circ = Circuit()
-        
+
         # loop over each term in the matrix expansion
         for op_list in self.ops:
             circ += self.make_controlled_op_list_circuit(op_list)
-        
+
         return circ
-    
+
     def make_vector_circuit(self):
         """Returns a quantum circuit implementing the unitary U that prepares
         the solution vector b from the ground state.
@@ -203,10 +202,10 @@ class PauliSystem():
         """
         # get a circuit
         circ = Circuit()
-        
+
         # get some qubits
         qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
-        
+
         # loop over each pauli operator
         for (q, key) in enumerate(self.vec_ops):
             if key == "I": continue
@@ -215,7 +214,7 @@ class PauliSystem():
                 self._key_to_gate(key)(qbits[q]),
                 strategy=InsertStrategy.EARLIEST
                 )
-        
+
         return circ
 
     def make_controlled_vector_circuit(self):
@@ -238,16 +237,16 @@ class PauliSystem():
                 self._key_to_cgate(key)(qbits[0], qbits[q]),
                 strategy=InsertStrategy.EARLIEST
                 )
-        
+
         return circ
-    
+
     # =========================================================================
     # methods for circuit ansatze
     # =========================================================================
-    
+
     def make_ansatz_circuit(self):
         pass
-    
+
     def layer(self, params, shifted_params, copy):
         """Implements a single layer of the diagonalizing unitary.
 
@@ -294,7 +293,7 @@ class PauliSystem():
         """        
         # for brevity
         n = self.num_qubits()
-        
+
         # get some qubits
         qbits = [LineQubit(x) for x in range(n + 1)]
 
@@ -413,31 +412,80 @@ class PauliSystem():
 
         yield (rx(qubit), ry(qubit), rz(qubit))
 
+    def get_symbol_list_for_layer(self):
+        """Creates a list of Symbol's for the circuit ansatz."""
+        ind = 12 * (self.num_qubits() // 2)
+        self.symbol_list = np.array(
+            [Symbol(str(ii)) for ii in range(0, ind)]
+            )
+        self.symbol_list_shifted = np.array(
+            [Symbol(str(ii)) for ii in range(ind, 2 * ind)]
+            )
+
+    def _reshape_list_to_layer_format(self, symlist):
+        """Helper function that converts a linear array of angles (used to call
+        the optimize function) into the format required by a layer.
+        """
+        return symlist.reshape(self.num_qubits() // 2, 4, 3)
+
     # =========================================================================
     # methods for computing the cost
     # =========================================================================
     
-    def _make_hadamard_test_circuit(self, ops1, ops2, j, mode):
+    def make_hadamard_test_circuit(self, ops1, ops2, j, mode):
+        """Returns a Hadamard test circuit for the local cost function."""
+        # get a circuit
+        circ = Circuit()
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
         # add hadamard gate on top register
+        circ.append(
+            ops.H(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
         
         # add ansatz on bottom register
+        # something like circ += self.make_ansatz()
         
         # add controlled sigma_k term (corresponding to ops1)
+        circ += self.make_controlled_op_list_circuit(ops1)
         
         # add u dagger term
+        # TODO: this only adds U, make sure it adds U\dagger
+        circ += self.make_vector_circuit()
         
         # add controlled sigma_z on the jth qubit
+        circ.append(
+            ops.CZ(qbits[0], qbits[j + 1]),
+            strategy=InsertStrategy.EARLIEST
+            )
         
         # add u term
+        circ += self.make_vector_circuit()
         
-        # add controlled sigma_kprim term (corresponding to ops2)
+        # add controlled sigma_kprime term (corresponding to ops2)
+        # add controlled sigma_k term (corresponding to ops1)
+        circ += self.make_controlled_op_list_circuit(ops2)
         
         # optional s gate for imag part
+        if mode == "imag" or mode != "real":
+            circ.append(
+                ops.S(qbits[0]),
+                strategy=InsertStrategy.EARLIEST
+                )
         
         # add hadamard gate on top register
+        circ.append(
+            ops.H(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
         
         # add measurement to top qubit
-        pass
+        circ.append(
+            ops.measure(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
+        return circ
     
     def run_hadamard_test(self, ops1, ops2, j, mode):
         """Returns the real or imaginary part of the term
