@@ -27,11 +27,13 @@ Amat_ops = np.array([["X", "Z", "Z", "Y"],
 # coefficients multiplying the terms of the pauli operators in A
 Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
 
+bvec_ops = np.array(["X", "X", "Z", "X"])
+
 # =============================================================================
 # main script
 # =============================================================================
 
-A = PauliSystem(Amat_coeffs, Amat_ops)
+A = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
 
 print(A.matrix())
 

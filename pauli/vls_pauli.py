@@ -47,13 +47,15 @@ class PauliSystem():
     # basic methods
     # =========================================================================
 
-    def __init__(self, coeffs, ops):
+    def __init__(self, coeffs, ops, vec_ops):
         # check inputs
         assert len(coeffs) == ops.shape[0]
+        assert len(vec_ops) == ops.shape[1]
 
         # attributes
         self.coeffs = coeffs
         self.ops = ops
+        self.vec_ops = vec_ops
 
     def num_qubits(self):
         """Returns the number of qubits the PauliMatrix acts on."""
@@ -175,7 +177,29 @@ class PauliSystem():
         return circ
     
     def make_vector_circuit(self):
-        pass
+        """Returns a quantum circuit implementing the unitary U that prepares
+        the solution vector b from the ground state.
+        
+        That is, |b> = U|0>.
+        """
+        # get a circuit
+        circ = Circuit()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
+        # loop over each term in the matrix expansion
+        for op_list in self.ops:
+            # loop over each pauli operator
+            for (q, key) in enumerate(op_list):
+                if key == "I": continue
+                q += 1
+                circ.append(
+                    self._key_to_cgate(key)(qbits[0], qbits[q]),
+                    strategy=InsertStrategy.EARLIEST
+                    )
+        
+        return circ
 
     def make_controlled_vector_circuit(self):
         pass
