@@ -60,6 +60,8 @@ class PauliSystem():
         self.vec_ops = vec_ops
         
         self.ansatz = Circuit()
+        
+        self._measure_key = "z"
 
     def num_qubits(self):
         """Returns the number of qubits the PauliMatrix acts on."""
@@ -480,7 +482,7 @@ class PauliSystem():
         
         # add measurement to top qubit
         circ.append(
-            ops.measure(qbits[0]),
+            ops.measure(qbits[0], key=self._measure_key),
             strategy=InsertStrategy.EARLIEST
             )
         return circ
