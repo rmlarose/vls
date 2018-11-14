@@ -18,7 +18,7 @@ import cirq
 # classes
 # =============================================================================
 
-class PauliMatrix():
+class PauliSystem():
     """PauliMatrix class.
     
     """
@@ -43,7 +43,7 @@ class PauliMatrix():
                      [0., -1.]], dtype=np.complex64)
 
     # =========================================================================
-    # matrices of pauli operators
+    # basic methods
     # =========================================================================
 
     def __init__(self, coeffs, ops):
@@ -66,6 +66,10 @@ class PauliMatrix():
     def num_elements(self):
         """Returns the number of elements in the PauliMatrix."""
         return 2**(2 * self.num_qubits())
+
+    # =========================================================================
+    # matrix methods
+    # =========================================================================
     
     def matrix(self):
         """Returns a matrix representation of the PauliMatrix."""
@@ -101,5 +105,7 @@ class PauliMatrix():
                    "Z": self.zmat}
         
         return key_mat[key]
-            
 
+    # =========================================================================
+    # circuit methods
+    # =========================================================================

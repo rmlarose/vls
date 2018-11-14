@@ -13,7 +13,7 @@ import numpy as np
 
 import cirq
 
-from vls_pauli import PauliMatrix
+from vls_pauli import PauliSystem
 
 # =============================================================================
 # constants
@@ -31,6 +31,6 @@ Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
 # main script
 # =============================================================================
 
-A = PauliMatrix(Amat_coeffs, Amat_ops)
+A = PauliSystem(Amat_coeffs, Amat_ops)
 
 print(A.matrix())
