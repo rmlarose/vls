@@ -13,6 +13,7 @@ at LANL 11-14-2018
 import numpy as np
 
 import cirq
+from cirq.ops.controlled_gate import ControlledGate
 
 # =============================================================================
 # classes
@@ -68,7 +69,7 @@ class PauliSystem():
         return 2**(2 * self.num_qubits())
 
     # =========================================================================
-    # matrix methods
+    # methods for the matrix of the Pauli System
     # =========================================================================
     
     def matrix(self):
@@ -107,5 +108,71 @@ class PauliSystem():
         return key_mat[key]
 
     # =========================================================================
-    # circuit methods
+    # methods for creating circuits
     # =========================================================================
+    
+    def make_matrix_circuit(self):
+        pass
+    
+    def make_controlled_matrix_circuit(self):
+        pass
+    
+    def make_vector_circuit(self):
+        pass
+
+    def make_controlled_vector_circuit(self):
+        pass
+    
+    def make_ansatz_circuit(self):
+        pass
+
+    # =========================================================================
+    # methods for computing the cost
+    # =========================================================================
+    
+
+    def run_hadamard_test(self, ops1, ops2, j, mode):
+        """Returns the real or imaginary part of the term
+        
+        <Q_{k, kprime}^{j}> := <0|V\dag A_k\dag U P_j U\dag A_kprime V|0\>
+        
+        using the Hadmard test.
+        
+        Args:
+            ops1 [type: list<str>]
+                first list of pauli operators (\sigma_k term in notes)
+            
+            ops2 [type: list<str>]
+                second list of pauli operators (\sigma_kprime in notes)
+            
+            j [type: int]
+                which qubit to perform controlled-Z on (between 1 and n)
+            
+            mode [type: str]
+                "real" or "imag"
+                "real" mode computes real part of <Q_{k, kprime}^{j}>
+                
+                "imag" mode computes imag part of <Q_{k, kprime}^{j}>
+        
+        Returns:
+            rtype: complex
+            real/imag part of expectation value <Q_{k, kprime}^{j}>
+        """
+        pass
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+        
+    
