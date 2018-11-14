@@ -21,19 +21,20 @@ API = "3ce852634bcc0d3fc6a5af0920aff9ad4be74ec6972f2a8e06b384796d4b28fd933c7386d
 URL = "https://quantumexperience.ng.bluemix.net/api"
 
 # backend to use for circuit execution
+#BACKEND = IBMQ.get_backend(name="ibmqx4")
 BACKEND = "qasm_simulator"
 
 # number of qubits in the system
 nqubits = 1
 
 # number of times to run hadamard test to estimate observable
-NUM_SHOTS = 10000
+NUM_SHOTS = 1000
 
 # flags
 VERBOSE = True
 
 # mode of script (optimize or grid search)
-MODE = "opt"
+MODE = "grid_search"
 
 # optimization methods
 METHODS = ['Nelder-Mead', 'Powell',
@@ -160,7 +161,7 @@ def grid_search(step):
 def main():
     """Runs main function for the file."""
     # register to use ibmq
-    IBMQ.enable_account(API, URL)
+    #IBMQ.enable_account(API, URL)
 
     # =========================================================================
     # grid search mode
