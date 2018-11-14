@@ -56,6 +56,7 @@ class PauliSystem():
         self.coeffs = coeffs
         self.ops = ops
         self.vec_ops = vec_ops
+        self.ansatz = Circuit()
 
     def num_qubits(self):
         """Returns the number of qubits the PauliMatrix acts on."""
@@ -129,6 +130,43 @@ class PauliSystem():
         
         return key_mat[key]
     
+    def make_op_list_circuit(self, op_list):
+        """Returns a quantum circuit implementing a list of Pauli ops."""
+        # get a circuit
+        circ = Circuit()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
+        for (q, key) in enumerate(op_list):
+            if key == "I": continue
+            q += 1
+            circ.append(
+                self._key_to_gate(key)(qbits[q]),
+                strategy=InsertStrategy.EARLIEST
+                )
+        
+        return circ
+    
+    def make_controlled_op_list_circuit(self, op_list):
+        """Returns a quantum circuit implementing a list of controlled Pauli
+        operations.
+        """
+        # get a circuit
+        circ = Circuit()
+
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+
+        for (q, key) in enumerate(op_list):
+            if key == "I": continue
+            q += 1
+            circ.append(
+                self._key_to_cgate(key)(qbits[0], qbits[q]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+        return circ
     
     def make_matrix_circuit(self):
         """Returns a quantum circuit implementing the matrix of the
@@ -137,19 +175,9 @@ class PauliSystem():
         # get a circuit
         circ = Circuit()
         
-        # get some qubits
-        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
-        
         # loop over each term in the matrix expansion
         for op_list in self.ops:
-            # loop over each pauli operator
-            for (q, key) in enumerate(op_list):
-                if key == "I": continue
-                q += 1
-                circ.append(
-                    self._key_to_gate(key)(qbits[q]),
-                    strategy=InsertStrategy.EARLIEST
-                    )
+            circ += self.make_op_list_circuit(op_list)
         
         return circ
                 
@@ -161,19 +189,9 @@ class PauliSystem():
         # get a circuit
         circ = Circuit()
         
-        # get some qubits
-        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
-        
         # loop over each term in the matrix expansion
         for op_list in self.ops:
-            # loop over each pauli operator
-            for (q, key) in enumerate(op_list):
-                q += 1
-                if key == "I": continue
-                circ.append(
-                    self._key_to_cgate(key)(qbits[0], qbits[q]),
-                    strategy=InsertStrategy.EARLIEST
-                    )
+            circ += self.make_controlled_op_list_circuit(op_list)
         
         return circ
     
@@ -223,8 +241,181 @@ class PauliSystem():
         
         return circ
     
+    # =========================================================================
+    # methods for circuit ansatze
+    # =========================================================================
+    
     def make_ansatz_circuit(self):
         pass
+    
+    def layer(self, params, shifted_params, copy):
+        """Implements a single layer of the diagonalizing unitary.
+
+        input:
+            params [type: list<list<float>>]
+                parameters for the first layer of gates.
+                len(params) must be n // 2 where n is the number of qubits
+                in the state and // indicates floor division.
+
+                the format of params is as follows:
+
+                params = [rotations for gates in layer]
+
+                where the rotations for the gates in the layer have the form
+
+                rotations for gates in layer =
+                    [x1, y1, z1],
+                    [x2, y2, z2],
+                    [x3, y3, z3],
+                    [x4, y4, z4].
+
+                Note that each gate consists of 12 parameters. 3 parameters
+                for each rotation and 4 total rotations.
+
+                The general form for a gate, which acts on two qubits,
+                is shown below:
+
+                    ----------------------------------------------------------
+                    | --Rx(x1)--Ry(y1)--Rz(z1)--@--Rx(x3)--Ry(y3)--Rz(z3)--@ |
+                G = |                           |                          | |
+                    | --Rx(x2)--Ry(y2)--Rz(z2)--X--Rx(x4)--Ry(y4)--Rz(z4)--X |
+                    ----------------------------------------------------------
+
+            shifted_params [type: ]
+                TODO: figure this out
+                parameters for the second shifted layer of gates
+
+            copy [type: int (0 or 1)]
+                the copy of the state to apply the layer to
+
+        modifies:
+            self.unitary_circ
+                appends the layer of operations to self.unitary_circ
+        """        
+        # for brevity
+        n = self.num_qubits()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(n + 1)]
+
+        if params.size != self.num_angles_required_for_layer():
+            raise ValueError("incorrect number of parameters for layer")
+
+        # =====================================================================
+        # helper functions for layer
+        # =====================================================================
+
+        def gate(qubits, params):
+            """Helper function to append the two qubit gate
+            ("G" in the VQSD paper figure).
+
+            input:
+                qubits [type: list<Qubits>]
+                    qubits to be acted on. must have length 2.
+
+                params [type: list<list<angles>>]
+                    the parameters of the rotations in the gate.
+                    len(params) must be equal to 12: 4 arbitrary rotations x
+                    3 angles per arbitrary rotation.
+
+                    the format of params must be
+
+                    [[x1, y1, z1],
+                     [x2, y2, z2],
+                     [x3, y3, z3],
+                     [x4, y4, z4]].
+
+                    the general form of a gate, which acts on two qubits,
+                    is shown below:
+
+                    ----------------------------------------------------------
+                    | --Rx(x1)--Ry(y1)--Rz(z1)--@--Rx(x3)--Ry(y3)--Rz(z3)--@ |
+                G = |                           |                          | |
+                    | --Rx(x2)--Ry(y2)--Rz(z2)--X--Rx(x4)--Ry(y4)--Rz(z4)--X |
+                    ----------------------------------------------------------
+
+            modifies:
+                self.unitary_circ
+                    appends a gate acting on the qubits to the unitary circ.
+            """
+            # rotation on 'top' qubit
+            self.ansatz.append(
+                self._rot(qubits[0], params[0]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+            # rotation on 'bottom' qubit
+            self.ansatz.append(
+                self._rot(qubits[1], params[1]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+            # cnot from 'top' to 'bottom' qubit
+            self.ansatz.append(
+                ops.CNOT(qubits[0], qubits[1]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+            # second rotation on 'top' qubit
+            self.ansatz.append(
+                self._rot(qubits[0], params[2]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+            # second rotation on 'bottom' qubit
+            self.ansatz.append(
+                self._rot(qubits[1], params[3]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+            # second cnot from 'top' to 'bottom' qubit
+            self.ansatz.append(
+                ops.CNOT(qubits[0], qubits[1]),
+                strategy=InsertStrategy.EARLIEST
+                )
+
+        # helper function for indexing loops
+        stop = lambda n: n - 1 if n % 2 == 1 else n
+
+        # shift in qubit indexing for different copies
+        shift = 2 * n * copy
+
+        # =====================================================================
+        # implement the layer
+        # =====================================================================
+
+        # TODO: speedup. combine two loops into one
+
+        # unshifted gates on adjacent qubit pairs
+        for ii in range(0, stop(n), 2):
+            iiq = ii + shift
+            gate(qbits[iiq : iiq + 2], params[ii // 2])
+
+        # shifted gates on adjacent qubits
+        if n > 2:
+            for ii in range(1, n, 2):
+                iiq = ii + shift
+                gate([qbits[iiq],
+                      qbits[(iiq + 1) % n + shift]],
+                     shifted_params[ii // 2])
+
+    def _rot(self, qubit, params):
+        """Helper function that returns an arbitrary rotation of the form
+        R = Rz(params[2]) * Ry(params[1]) * Rx(params[0])
+        on the qubit, e.g. R |qubit>.
+
+        Note that order is reversed when put into the circuit. The circuit is:
+        |qubit>---Rx(params[0])---Ry(params[1])---Rz(params[2])---
+        """
+        rx = ops.RotXGate(half_turns=params[0])
+        ry = ops.RotYGate(half_turns=params[1])
+        rz = ops.RotZGate(half_turns=params[2])
+
+        yield (rx(qubit), ry(qubit), rz(qubit))
+
+    # =========================================================================
+    # methods for computing the cost
+    # =========================================================================
     
     def _make_hadamard_test_circuit(self, ops1, ops2, j, mode):
         # add hadamard gate on top register
@@ -247,14 +438,7 @@ class PauliSystem():
         
         # add measurement to top qubit
         pass
-
-    # =========================================================================
-    # methods for computing the cost
-    # =========================================================================
     
-    
-    
-
     def run_hadamard_test(self, ops1, ops2, j, mode):
         """Returns the real or imaginary part of the term
         
@@ -286,19 +470,3 @@ class PauliSystem():
         
         # run it
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-    

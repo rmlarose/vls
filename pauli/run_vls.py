@@ -35,10 +35,10 @@ bvec_ops = np.array(["X", "X", "Z", "X"])
 
 A = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
 
-print(A.matrix())
+print("Matrix of system:\n", A.matrix())
 
+print("Circuit for first term:\n", A.make_controlled_op_list_circuit(A.ops[1]))
 
-print(A.make_matrix_circuit())
-print(A.make_controlled_matrix_circuit())
+print("Circuit for matrix:\n", A.make_controlled_matrix_circuit())
 
-print(A.make_vector_circuit())
+print("Circuit for vector:\n", A.make_vector_circuit())
