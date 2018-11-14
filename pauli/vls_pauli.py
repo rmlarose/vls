@@ -138,13 +138,14 @@ class PauliSystem():
         circ = Circuit()
         
         # get some qubits
-        qbits = [LineQubit(x) for x in range(self.num_qubits())]
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
         
         # loop over each term in the matrix expansion
         for op_list in self.ops:
             # loop over each pauli operator
             for (q, key) in enumerate(op_list):
                 if key == "I": continue
+                q += 1
                 circ.append(
                     self._key_to_gate(key)(qbits[q]),
                     strategy=InsertStrategy.EARLIEST
@@ -188,21 +189,39 @@ class PauliSystem():
         # get some qubits
         qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
         
-        # loop over each term in the matrix expansion
-        for op_list in self.ops:
-            # loop over each pauli operator
-            for (q, key) in enumerate(op_list):
-                if key == "I": continue
-                q += 1
-                circ.append(
-                    self._key_to_cgate(key)(qbits[0], qbits[q]),
-                    strategy=InsertStrategy.EARLIEST
-                    )
+        # loop over each pauli operator
+        for (q, key) in enumerate(self.vec_ops):
+            if key == "I": continue
+            q += 1
+            circ.append(
+                self._key_to_gate(key)(qbits[q]),
+                strategy=InsertStrategy.EARLIEST
+                )
         
         return circ
 
     def make_controlled_vector_circuit(self):
-        pass
+        """Returns a quantum circuit implementing the controlled unitary U 
+        that prepares the solution vector b from the ground state.
+        
+        That is, |b> = U|0>.
+        """
+        # get a circuit
+        circ = Circuit()
+        
+        # get some qubits
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
+        # loop over each pauli operator
+        for (q, key) in enumerate(self.vec_ops):
+            if key == "I": continue
+            q += 1
+            circ.append(
+                self._key_to_cgate(key)(qbits[0], qbits[q]),
+                strategy=InsertStrategy.EARLIEST
+                )
+        
+        return circ
     
     def make_ansatz_circuit(self):
         pass

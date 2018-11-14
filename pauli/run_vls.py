@@ -40,3 +40,5 @@ print(A.matrix())
 
 print(A.make_matrix_circuit())
 print(A.make_controlled_matrix_circuit())
+
+print(A.make_vector_circuit())
