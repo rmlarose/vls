@@ -64,17 +64,25 @@ class PauliSystem():
         self._measure_key = "z"
 
     def num_qubits(self):
-        """Returns the number of qubits the PauliMatrix acts on."""
+        """Returns the number of qubits the PauliSystem acts on."""
         return self.ops.shape[1]
     
     def size(self):
-        """Returns the dimensions of the PauliMatrix."""
+        """Returns the dimension of the matrix of the PauliSystem."""
         dim = 2**(self.num_qubits())
         return (dim, dim)
 
     def num_elements(self):
-        """Returns the number of elements in the PauliMatrix."""
+        """Returns the number of matrix elements in the matrix of the
+        PauliSystem.
+        """
         return 2**(2 * self.num_qubits())
+    
+    def normalize_coeffs(self):
+        """Normalizes each coefficent in the matrix expansion for the
+        PauliSystem.
+        """
+        self.coeffs = np.array([x / np.abs(x) for x in self.coeffs])
 
     # =========================================================================
     # methods for the matrix of the Pauli System
@@ -586,17 +594,28 @@ class PauliSystem():
         # for brevity
         n = self.num_qubits()
         n_terms = self.coeffs.size
+        
+        # variable to store the cost
         cval = 0
         
+        # helper function for complex conjugates
+        conj = lambda z: np.complex.conjugate(z)
+        
+        # compute the each term in the local cost function
         for k in range(n_terms):
             for l in range(k, n_terms):
-                jterm = 0
+                # variable to store the sum over j term
+                jterm = 0.
+                # loop over all "j values" in cost function definition
                 for j in range(1, n):
+                    # run the hadamard test to compute get the real part
                     jterm += self.run_hadamard_test(
                         angles, self.ops[k], self.ops[l], j, "real"
                         )
+                # add the appropriate factors
                 if k == l:
-                    cval += jterm
+                    cval += self.coeffs[k] * conj(self.coeffs[l]) * jterm
                 else:
-                    cval += 2 * jterm
-        return 1 - cval / n
+                    cval += 2. * np.real(self.coeffs[k] * conj(self.coeffs[l])) * jterm
+        # return the real part to avoid numerical error/small imaginary parts
+        return np.real(1. - cval / n)

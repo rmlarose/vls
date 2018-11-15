@@ -43,6 +43,7 @@ np.random.seed(seed=100)
 
 # get a pauli system
 system = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
+system.normalize_coeffs()
 
 # compute it's matrix
 print("Matrix of system:\n", system.matrix())
@@ -53,11 +54,11 @@ print(system.make_hadamard_test_circuit(
         system.ops[0], system.ops[1], 3, "real")
     )
 
-# set some random angles
+# set some angles
 angles = np.zeros(48)
 
 # compute each expectation and time it
 start = time()
-cost = system.cost(angles)
+cost = system.eff_cost(angles)
 print("cost runtime =", time() - start, "seconds")
 print(cost)
