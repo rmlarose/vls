@@ -553,7 +553,7 @@ class PauliSystem():
         return real + imag * 1j
 
     def cost(self, angles):
-        """Computes the local cost function of vls."""
+        """Returns the local cost function of vls."""
         # for brevity
         n = self.num_qubits()
         n_terms = self.coeffs.size
@@ -580,3 +580,23 @@ class PauliSystem():
                 cval += self.coeffs[k] * conj(self.coeffs[l]) * expectations[k, l]
         cost = 1 - cval / n
         return cost
+    
+    def eff_cost(self, angles):
+        """Returns the local cost function computed in a more efficient way."""
+        # for brevity
+        n = self.num_qubits()
+        n_terms = self.coeffs.size
+        cval = 0
+        
+        for k in range(n_terms):
+            for l in range(k, n_terms):
+                jterm = 0
+                for j in range(1, n):
+                    jterm += self.run_hadamard_test(
+                        angles, self.ops[k], self.ops[l], j, "real"
+                        )
+                if k == l:
+                    cval += jterm
+                else:
+                    cval += 2 * jterm
+        return 1 - cval / n

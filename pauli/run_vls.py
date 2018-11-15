@@ -24,13 +24,13 @@ Amat_ops = np.array([["X", "Z", "Z", "Y"],
                      ["Y", "I", "X", "Z"],
                      ["Z", "X", "Y", "Y"]])
 
-Amat_ops = np.array([["X", "Z", "Z", "Y"],
-                     ["Y", "I", "X", "Z"]])
+#Amat_ops = np.array([["X", "Z", "Z", "Y"],
+#                     ["Y", "I", "X", "Z"]])
 
 # coefficients multiplying the terms of the pauli operators in A
 Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
 
-Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j])
+#Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j])
 
 bvec_ops = np.array(["X", "Y", "Z", "X"])
 
@@ -54,10 +54,10 @@ print(system.make_hadamard_test_circuit(
     )
 
 # set some random angles
-angles = np.random.rand(48)
+angles = np.zeros(48)
 
 # compute each expectation and time it
 start = time()
-exps = system.cost(angles)
+cost = system.cost(angles)
 print("cost runtime =", time() - start, "seconds")
-print(exps)
+print(cost)
