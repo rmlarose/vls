@@ -487,7 +487,7 @@ class PauliSystem():
             )
         return circ
     
-    def run_hadamard_test(self, angles, ops1, ops2, j, mode, reps):
+    def run_hadamard_test(self, angles, ops1, ops2, j, mode, reps=10000):
         """Returns the real or imaginary part of the term
         
         <Q_{k, kprime}^{j}> := <0|V\dag A_k\dag U P_j U\dag A_kprime V|0\>
@@ -534,4 +534,42 @@ class PauliSystem():
             repetitions=reps
             )
         
-        return out
+        # get the measurement outcomes
+        counts = out.histogram(key=self._measure_key)
+        
+        # do the classical postprocessing for the hadamard test
+        zero_count = 0
+        one_count = 0
+        if 0 in counts.keys():
+            zero_count = counts[0]
+        if 1 in counts.keys():
+            one_count = counts[1]
+        return (zero_count - one_count) / reps
+    
+    def compute_expectation(self, angles, ops1, ops2, j, reps=10000):
+        """Returns the expectation value <Q_{k, kprime}^{j}>."""
+        real = self.run_hadamard_test(angles, ops1, ops2, j, "real", reps)
+        imag = self.run_hadamard_test(angles, ops1, ops2, j, "imag", reps)
+        return real + imag * 1j
+
+    def cost(self, angles):
+        """Computes the local cost function of vls."""
+        # for brevity
+        n = self.num_qubits()
+        n_terms = self.coeffs.size
+        
+        # 2d array to hold all expectation values
+        expectations = np.zeros([n_terms, n_terms], dtype=np.complex64)
+        
+        for k in range(n_terms):
+            ops1 = self.ops[k]
+            for l in range(n_terms):
+                ops2 = self.ops[l]
+                jterms = []
+                for j in range(1, n):
+                    exp = self.compute_expectation(
+                        angles, ops1, ops2, j)
+                    print(k, l, j, exp)
+                    jterms.append(exp)
+                expectations[k, l] = sum(jterms)
+        return expectations

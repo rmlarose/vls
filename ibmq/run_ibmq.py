@@ -34,9 +34,12 @@ from scipy.optimize import minimize
 API = "3ce852634bcc0d3fc6a5af0920aff9ad4be74ec6972f2a8e06b384796d4b28fd933c7386d2e1296ee5b0425afb317f75d44f558ba6ba18cd8fc899a1fe9fcbb8"
 URL = "https://quantumexperience.ng.bluemix.net/api"
 
+# register to use ibmq
+IBMQ.enable_account(API, URL)
+
 # backend to use for circuit execution
-#BACKEND = IBMQ.get_backend(name="ibmqx4")
-BACKEND = "qasm_simulator"
+BACKEND = IBMQ.get_backend(name="ibmqx4")
+#BACKEND = "qasm_simulator"
 
 # number of qubits in the system
 nqubits = 1
@@ -110,9 +113,7 @@ def run_hadamard_test(operators:list, angles=[0, 0, 0],
     
     if verbose:
         print(circ.qasm())
-    
-    # TODO: explore the multiple circuits option of execute()
-    # can we get the real and imag parts in one call?
+
     out = execute(circuits=circ,
                   backend=BACKEND,
                   shots=num_shots)
@@ -180,9 +181,6 @@ def grid_search(step):
 
 def main():
     """Runs main function for the file."""
-    # register to use ibmq
-    #IBMQ.enable_account(API, URL)
-
     # =========================================================================
     # grid search mode
     # =========================================================================
