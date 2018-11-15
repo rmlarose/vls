@@ -38,7 +38,7 @@ URL = "https://quantumexperience.ng.bluemix.net/api"
 IBMQ.enable_account(API, URL)
 
 # backend to use for circuit execution
-BACKEND = IBMQ.get_backend(name="ibmqx4")
+BACKEND = IBMQ.get_backend(name="ibmqx5")
 #BACKEND = "qasm_simulator"
 
 # number of qubits in the system
@@ -173,6 +173,7 @@ def grid_search(step):
 
     for (i, x) in enumerate(xs):
         costs[i] = cost([x])
+        print(costs)
     return (xs, costs)
 
 # =============================================================================

@@ -572,4 +572,11 @@ class PauliSystem():
                     print(k, l, j, exp)
                     jterms.append(exp)
                 expectations[k, l] = sum(jterms)
-        return expectations
+                
+        cval = 0.0
+        conj = lambda z: np.complex.conjugate(z)
+        for k in range(n_terms):
+            for j in range(n_terms):
+                cval += self.coeffs[k] * conj(self.coeffs[l]) * expectations[k, l]
+        cost = 1 - cval / n
+        return cost

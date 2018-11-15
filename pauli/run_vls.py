@@ -38,22 +38,25 @@ bvec_ops = np.array(["X", "Y", "Z", "X"])
 # main script
 # =============================================================================
 
+# set a random seed
 np.random.seed(seed=100)
 
+# get a pauli system
 system = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
 
+# compute it's matrix
 print("Matrix of system:\n", system.matrix())
 
+# show the circuit to compute the local cost function for two terms
 print("Hadamard test for local cost function circuit:")
 print(system.make_hadamard_test_circuit(
         system.ops[0], system.ops[1], 3, "real")
     )
 
+# set some random angles
 angles = np.random.rand(48)
-exp = system.compute_expectation(angles, system.ops[0], system.ops[1], 0)
 
-print(exp)
-
+# compute each expectation and time it
 start = time()
 exps = system.cost(angles)
 print("cost runtime =", time() - start, "seconds")
