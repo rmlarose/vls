@@ -43,7 +43,6 @@ np.random.seed(seed=100)
 
 # get a pauli system
 system = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
-system.normalize_coeffs()
 
 # compute it's matrix
 print("Matrix of system:\n", system.matrix())

@@ -11,6 +11,7 @@ at LANL 11-14-2018
 # =============================================================================
 
 import numpy as np
+from scipy.optimize import minimize
 
 from cirq import (Circuit, InsertStrategy, LineQubit, ops,
                   ParamResolver,Symbol)
@@ -618,4 +619,19 @@ class PauliSystem():
                 else:
                     cval += 2. * np.real(self.coeffs[k] * conj(self.coeffs[l])) * jterm
         # return the real part to avoid numerical error/small imaginary parts
-        return np.real(1. - cval / n)
+        cost = np.real(1. - cval / n)
+        print(cost)
+        return cost
+    
+    # =========================================================================
+    # methods for doiong the optimization (solving the system)
+    # =========================================================================
+    
+    
+    def solve(self):
+        """Minimizes the cost function to (approximately) solve the system."""
+        x0 = np.zeros(48)
+        out = minimize(fun=self.eff_cost,
+                       x0=x0,
+                       method="COBYLA")
+        return out

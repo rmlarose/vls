@@ -1,0 +1,31 @@
+This folder contains results for running the circuit
+
+|0>--X--H--U3(theta, 0, 0)--measure
+
+at values of theta between 0 and 2pi in steps of 0.1.
+
+These circuits were run on the IBM Q Experience website using the
+drag and drop circuit editor (because my QISKit code throws a 404
+generic error everytime I try to run it on ibmqx4).
+
+The computer used was IBMQX4.
+
+All operations were done on the first (zeroth) qubit q0.
+
+Date experiments were run: Thursday morning 11-14-2018.
+
+Number of shots in experiments was 8192 (max allowed on website interface).
+
+NAMING CONVENTION FOR FILES:
+----------------------------
+
+distributionXY.csv is the data obtain for theta = X.Y (floating point value).
+Here, X, Y are digits between 0 and 9.
+
+For example:
+
+distribution00.csv = data obtained for circuit with theta = 0.0
+distribution21.csv = data obtained for circuit with theta = 2.1
+distribution62.csv = data obtained for circuit with tehta = 6.2
+
+The values of angles theta used were 0.0, 0.1, 0.2, ..., 6.1, 6.2.
