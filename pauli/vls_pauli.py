@@ -519,6 +519,7 @@ class PauliSystem():
             ops.measure(qbits[0], key=self._measure_key),
             strategy=InsertStrategy.EARLIEST
             )
+
         return circ
     
     def make_norm_circuit(self, ops1, ops2, mode):
@@ -552,6 +553,12 @@ class PauliSystem():
         # add hadamard gate on top register
         circ.append(
             ops.H(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
+        
+        # add measurement to top qubit
+        circ.append(
+            ops.measure(qbits[0], key=self._measure_key),
             strategy=InsertStrategy.EARLIEST
             )
         
@@ -706,8 +713,8 @@ class PauliSystem():
                         angles, self.ops[k], self.ops[l], j, "real"
                         )
                 # divide the jterm by the norm
-                
-                
+                nterm = self.run_norm_circuit(angles, self.ops[k], self.ops[l], "real")
+                jterm = jterm / nterm
                 
                 # add the appropriate factors
                 if k == l:
