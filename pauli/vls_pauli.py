@@ -86,7 +86,7 @@ class PauliSystem():
         self.coeffs = np.array([x / np.abs(x) for x in self.coeffs])
 
     # =========================================================================
-    # methods for the matrix of the Pauli System
+    # methods for the matrix/vectors of the Pauli System
     # =========================================================================
     
     def matrix(self):
@@ -139,7 +139,19 @@ class PauliSystem():
         # return the first column
         return mat[:, 0]
             
-
+    def solution(self, angles):
+        """Returns the solution of the PauliSystem."""
+        # get a parameter resolver for the input angles
+        param_resolver = ParamResolver(
+            {str(ii) : angles[ii] for ii in range(len(angles))}
+        )
+        
+        # resolve the circuit with the angles
+        solution_circuit = self.ansatz.with_parameters_resolved_by(param_resolver)
+        
+        # return the first column of the unitary
+        return solution_circuit.to_unitary_matrix()[:, 0]
+        
     # =========================================================================
     # methods for creating circuits
     # =========================================================================
@@ -317,11 +329,8 @@ class PauliSystem():
                 TODO: figure this out
                 parameters for the second shifted layer of gates
 
-            copy [type: int (0 or 1)]
-                the copy of the state to apply the layer to
-
         modifies:
-            self.unitary_circ
+            self.ansatz
                 appends the layer of operations to self.unitary_circ
         """        
         # for brevity
@@ -512,6 +521,42 @@ class PauliSystem():
             )
         return circ
     
+    def make_norm_circuit(self, ops1, ops2, mode):
+        """Returns a circuit for computing the norm."""
+        # get a circuit
+        circ = Circuit()
+        qbits = [LineQubit(x) for x in range(self.num_qubits() + 1)]
+        
+        # add hadamard gate on top register
+        circ.append(
+            ops.H(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
+        
+        # add ansatz on bottom register
+        circ += self.ansatz
+        
+        # add controlled sigma_k term (corresponding to ops1)
+        circ += self.make_controlled_op_list_circuit(ops1)
+        
+        # add controlled sigma_l term (corresponding to ops2)
+        circ += self.make_controlled_op_list_circuit(ops2)
+        
+        # optional s gate for imag part
+        if mode == "imag" or mode != "real":
+            circ.append(
+                ops.S(qbits[0]),
+                strategy=InsertStrategy.EARLIEST
+                )
+        
+        # add hadamard gate on top register
+        circ.append(
+            ops.H(qbits[0]),
+            strategy=InsertStrategy.EARLIEST
+            )
+        
+        return circ
+    
     def run_hadamard_test(self, angles, ops1, ops2, j, mode, reps=10000):
         """Returns the real or imaginary part of the term
         
@@ -544,6 +589,37 @@ class PauliSystem():
         """
         # get a hadmard test circuit with symbols (parameters)
         circuit = self.make_hadamard_test_circuit(ops1, ops2, j, mode)
+        
+        # get a parameter resolver for the input angles
+        param_resolver = ParamResolver(
+            {str(ii) : angles[ii] for ii in range(len(angles))}
+        )
+        
+        # get a circuit simulator
+        simulator = XmonSimulator()
+        
+        # run the circuit with resolved parameters
+        out = simulator.run(
+            circuit.with_parameters_resolved_by(param_resolver),
+            repetitions=reps
+            )
+        
+        # get the measurement outcomes
+        counts = out.histogram(key=self._measure_key)
+        
+        # do the classical postprocessing for the hadamard test
+        zero_count = 0
+        one_count = 0
+        if 0 in counts.keys():
+            zero_count = counts[0]
+        if 1 in counts.keys():
+            one_count = counts[1]
+        return (zero_count - one_count) / reps
+    
+    def run_norm_circuit(self, angles, ops1, ops2, mode, reps=10000):
+        """Returns one term in the norm expansion by running the norm circuit."""
+        # get a norm circuit
+        circuit = self.make_norm_circuit(ops1, ops2, mode)
         
         # get a parameter resolver for the input angles
         param_resolver = ParamResolver(
@@ -629,6 +705,10 @@ class PauliSystem():
                     jterm += self.run_hadamard_test(
                         angles, self.ops[k], self.ops[l], j, "real"
                         )
+                # divide the jterm by the norm
+                
+                
+                
                 # add the appropriate factors
                 if k == l:
                     cval += self.coeffs[k] * conj(self.coeffs[l]) * jterm
