@@ -133,7 +133,7 @@ class PauliSystem():
             
         # loop over all terms in vector operator list
         if len(self.vec_ops) > 1:
-            for k in range(1, self.vec_ops):
+            for k in range(1, len(self.vec_ops)):
                 mat = np.kron(mat, self._key_to_mat(self.vec_ops[k]))
         
         # return the first column
@@ -644,10 +644,9 @@ class PauliSystem():
     # =========================================================================
     
     
-    def solve(self):
+    def solve(self, x0, opt_method="Powell"):
         """Minimizes the cost function to (approximately) solve the system."""
-        x0 = np.zeros(48)
         out = minimize(fun=self.eff_cost,
                        x0=x0,
-                       method="COBYLA")
+                       method=opt_method)
         return out
