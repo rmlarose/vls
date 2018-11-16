@@ -122,6 +122,23 @@ class PauliSystem():
                    "Z": self.zmat}
 
         return key_mat[key]
+    
+    def vector(self):
+        """Returns the vector of the PauliSystem."""
+        # allocate space
+        mat = np.zeros(self.size()[0], dtype=np.complex64)
+        
+        # get the first operator
+        mat = self._key_to_mat(self.vec_ops[0])
+            
+        # loop over all terms in vector operator list
+        if len(self.vec_ops) > 1:
+            for k in range(1, self.vec_ops):
+                mat = np.kron(mat, self._key_to_mat(self.vec_ops[k]))
+        
+        # return the first column
+        return mat[:, 0]
+            
 
     # =========================================================================
     # methods for creating circuits
@@ -453,7 +470,6 @@ class PauliSystem():
             )
         
         # add ansatz on bottom register
-        self.make_ansatz_circuit()
         circ += self.ansatz
         
         # add controlled sigma_k term (corresponding to ops1)
