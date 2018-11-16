@@ -38,14 +38,14 @@ URL = "https://quantumexperience.ng.bluemix.net/api"
 IBMQ.enable_account(API, URL)
 
 # backend to use for circuit execution
-BACKEND = IBMQ.get_backend(name="ibmqx5")
-#BACKEND = "qasm_simulator"
+#BACKEND = IBMQ.get_backend(name="ibmqx5")
+BACKEND = "qasm_simulator"
 
 # number of qubits in the system
 nqubits = 1
 
 # number of times to run hadamard test to estimate observable
-NUM_SHOTS = 10000
+NUM_SHOTS = 10000*2
 
 # flags
 VERBOSE = True
@@ -189,6 +189,10 @@ def main():
     if MODE == "grid_search":
         # do the grid search
         xs, costs = grid_search(step=0.1)
+        
+        # save the results once
+        a = np.array([xs, costs])
+        np.savetxt("sim-data.txt", a.T)
         
         # if we use a qcomputer, save the results
         if BACKEND != "qasm_simulator":

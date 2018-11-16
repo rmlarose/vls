@@ -43,6 +43,9 @@ for fname in fnames:
     vals = cur.values
     data.append([vals[0, 1], vals[1, 1]])
     
+# grab simulated data
+sdata = np.loadtxt("sim-data.txt")
+    
 # =============================================================================
 # process data
 # =============================================================================
@@ -54,5 +57,13 @@ costs = np.array([s[1] / NSHOTS for s in data])
 # plot the cost
 # =============================================================================
 
-plt.plot(xs, costs, "-o")
+plt.plot(xs, costs, "-o", label="ibmqx4")
+plt.plot(sdata[:, 0], sdata[:, 1], "-o", label="simulator")
+
+plt.xticks([0, np.pi / 2, np.pi, 3 * np.pi / 2, 2 * np.pi],
+                   ["0", "pi / 2", "pi", "3 pi / 2", "2 pi"])
+plt.title("2x2 Linear System", weight="bold", fontsize=14)
+plt.ylabel("Cost (Local)", fontsize=12)
+plt.xlabel("Ansatz Angle", fontsize=12)
+plt.legend()
 plt.grid()
