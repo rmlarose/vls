@@ -20,16 +20,16 @@ from vls_pauli import PauliSystem
 # =============================================================================
 
 # pauli operators making up A. each row corresponds to a term of paulis
-#Amat_ops = np.array([["X", "Z", "Z", "Y"],
-#                     ["Y", "I", "X", "Z"],
-#                     ["Z", "X", "Y", "Y"]])
+Amat_ops = np.array([["X", "Z", "Z", "Y"],
+                     ["Y", "I", "X", "Z"],
+                     ["Z", "X", "Y", "Y"]])
 
-Amat_ops = np.array([["X", "Z", "Z", "Y"]])
+#Amat_ops = np.array([["X", "Z", "Z", "Y"]])
 
 # coefficients multiplying the terms of the pauli operators in A
-#Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
+Amat_coeffs = np.array([1. +0.3j, -0.4 - 1j, 2. + 4.2j])
 
-Amat_coeffs = np.array([0.5 - 0.5j])
+#Amat_coeffs = np.array([0.5 - 0.5j])
 
 bvec_ops = np.array(["X", "X", "X", "X"])
 
@@ -38,7 +38,7 @@ bvec_ops = np.array(["X", "X", "X", "X"])
 # =============================================================================
 
 # set a random seed
-np.random.seed(seed=100)
+#np.random.seed(seed=100)
 
 # get a pauli system
 system = PauliSystem(Amat_coeffs, Amat_ops, bvec_ops)
@@ -53,8 +53,9 @@ print(system.make_hadamard_test_circuit(
         system.ops[0], system.ops[0], 2, "real")
     )
 
+system.make_ansatz_circuit()
 # set some angles
-angles = np.zeros(48)
+angles = np.random.randn(48)
 
 # compute each expectation and time it
 start = time()

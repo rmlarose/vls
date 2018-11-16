@@ -702,27 +702,31 @@ class PauliSystem():
         conj = lambda z: np.complex.conjugate(z)
         
         # compute the each term in the local cost function
+        norm = 0.0
         for k in range(n_terms):
             for l in range(k, n_terms):
                 # variable to store the sum over j term
-                jterm = 0.
+                jterm = 0.0
                 # loop over all "j values" in cost function definition
-                for j in range(1, n):
+                for j in range(n):
                     # run the hadamard test to compute get the real part
                     jterm += self.run_hadamard_test(
                         angles, self.ops[k], self.ops[l], j, "real"
                         )
-                # divide the jterm by the norm
-                nterm = self.run_norm_circuit(angles, self.ops[k], self.ops[l], "real")
-                jterm = jterm / nterm
-                
+                # add to the norm term
+                norm += self.run_norm_circuit(angles, self.ops[k], self.ops[l], "real")
+                print("jterm =", jterm)
                 # add the appropriate factors
                 if k == l:
                     cval += self.coeffs[k] * conj(self.coeffs[l]) * jterm
                 else:
                     cval += 2. * np.real(self.coeffs[k] * conj(self.coeffs[l])) * jterm
+                print("CVAL = ", cval)
+        print("norm =", norm)
+        print("cval =", cval)
+        print("n =", n)
         # return the real part to avoid numerical error/small imaginary parts
-        cost = np.real(1. - cval / n)
+        cost = np.real(1. - cval / n / norm)
         print(cost)
         return cost
     
