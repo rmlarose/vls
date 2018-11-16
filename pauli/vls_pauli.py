@@ -715,16 +715,16 @@ class PauliSystem():
                         )
                 # add to the norm term
                 norm += self.run_norm_circuit(angles, self.ops[k], self.ops[l], "real")
-                print("jterm =", jterm)
+                #print("jterm =", jterm)
                 # add the appropriate factors
                 if k == l:
                     cval += self.coeffs[k] * conj(self.coeffs[l]) * jterm
                 else:
                     cval += 2. * np.real(self.coeffs[k] * conj(self.coeffs[l])) * jterm
-                print("CVAL = ", cval)
-        print("norm =", norm)
-        print("cval =", cval)
-        print("n =", n)
+                #print("CVAL = ", cval)
+        #print("norm =", norm)
+        #print("cval =", cval)
+        #print("n =", n)
         # return the real part to avoid numerical error/small imaginary parts
         cost = np.real(1. - cval / n / norm)
         print(cost)
