@@ -734,10 +734,27 @@ class PauliSystem():
     # methods for doiong the optimization (solving the system)
     # =========================================================================
     
-    
     def solve(self, x0, opt_method="Powell"):
         """Minimizes the cost function to (approximately) solve the system."""
         out = minimize(fun=self.eff_cost,
                        x0=x0,
                        method=opt_method)
         return out
+    
+    # =========================================================================
+    # methods for forming the solution vector
+    # =========================================================================
+    
+    def xvector(self, angles):
+        """Forms the solution vector for the given set of angles in the ansatz.
+        """
+        # get a parameter resolver for the input angles
+        param_resolver = ParamResolver(
+            {str(ii) : angles[ii] for ii in range(len(angles))}
+        )
+        
+        # resolve the angles in the ansatz
+        circ = self.ansatz.with_parameters_resolved_by(param_resolver)
+        
+        # return the first column
+        return circ.to_unitary_matrix()[:, 0]
