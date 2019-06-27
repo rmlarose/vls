@@ -13,10 +13,10 @@ at LANL 11-14-2018
 import numpy as np
 from scipy.optimize import minimize
 
-from cirq import (Circuit, InsertStrategy, LineQubit, ops,
-                  ParamResolver,Symbol)
+from cirq import Circuit, InsertStrategy, LineQubit, ops, ParamResolver, Simulator
 from cirq.ops.controlled_gate import ControlledGate
-from cirq.google import XmonSimulator
+
+from sympy import Symbol
 
 # =============================================================================
 # classes
@@ -440,9 +440,9 @@ class PauliSystem():
         Note that order is reversed when put into the circuit. The circuit is:
         |qubit>---Rx(params[0])---Ry(params[1])---Rz(params[2])---
         """
-        rx = ops.RotXGate(half_turns=params[0])
-        ry = ops.RotYGate(half_turns=params[1])
-        rz = ops.RotZGate(half_turns=params[2])
+        rx = ops.Rx(params[0])
+        ry = ops.Ry(params[1])
+        rz = ops.Rz(params[2])
 
         yield (rx(qubit), ry(qubit), rz(qubit))
 
@@ -603,11 +603,12 @@ class PauliSystem():
         )
         
         # get a circuit simulator
-        simulator = XmonSimulator()
+        simulator = Simulator()
         
         # run the circuit with resolved parameters
         out = simulator.run(
-            circuit.with_parameters_resolved_by(param_resolver),
+            circuit,
+            param_resolver,
             repetitions=reps
             )
         
@@ -634,11 +635,12 @@ class PauliSystem():
         )
         
         # get a circuit simulator
-        simulator = XmonSimulator()
+        simulator = Simulator()
         
         # run the circuit with resolved parameters
         out = simulator.run(
-            circuit.with_parameters_resolved_by(param_resolver),
+            circuit,
+            param_resolver,
             repetitions=reps
             )
         
